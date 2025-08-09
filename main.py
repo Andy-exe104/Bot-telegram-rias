@@ -113,13 +113,21 @@ class RiasGremoryBot:
             await application.start()
             if error_logger:
                 error_logger.log_info("Bot started successfully!")
-            await application.run_polling()
+            await application.run_polling(allowed_updates=Update.ALL_TYPES)
             
         except Exception as e:
             log_error_to_file(e, "Bot startup")
             if error_logger:
                 error_logger.log_error(e, "Bot startup")
             raise e
+        finally:
+            # Ensure proper cleanup
+            try:
+                if 'application' in locals():
+                    await application.stop()
+                    await application.shutdown()
+            except Exception as cleanup_error:
+                log_error_to_file(cleanup_error, "Cleanup error")
     
     async def handle_prefixed_commands(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle commands with prefixes"""
@@ -182,7 +190,14 @@ async def main():
 
 if __name__ == '__main__':
     try:
+        # Set up proper event loop handling
+        if sys.platform.startswith('win'):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        
         asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Bot stopped by user")
     except Exception as e:
         log_error_to_file(e, "asyncio.run")
+        print(f"Error: {e}")
         sys.exit(1)

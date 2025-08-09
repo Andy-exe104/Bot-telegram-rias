@@ -60,7 +60,18 @@ def main():
         # Run the bot
         print("🚀 Starting bot...")
         import asyncio
-        asyncio.run(main.main())
+        
+        # Set up proper event loop handling
+        if sys.platform.startswith('win'):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        
+        try:
+            asyncio.run(main.main())
+        except KeyboardInterrupt:
+            print("Bot stopped by user")
+        except Exception as e:
+            log_error("Event loop error", e)
+            raise e
         
     except Exception as e:
         log_error("CRITICAL ERROR: Failed to start bot", e)
