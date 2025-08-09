@@ -1,28 +1,65 @@
 import asyncio
 import logging
 import os
+import sys
 import traceback
 from datetime import datetime
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
-from database.database import DatabaseManager
-from commands.start import start_command
-from commands.info import info_command
-from commands.admin import admin_commands
-from commands.logs import logs_command
-from commands.commit_logs import commit_logs_command
-from config.prefixes import is_valid_prefix, get_command_without_prefix
-from utils.logger import ErrorLogger
+
+# Setup basic error logging first, before anything else
+def setup_basic_logging():
+    """Setup basic error logging that works even if everything else fails"""
+    try:
+        # Create a simple log file
+        with open('error_log.txt', 'a', encoding='utf-8') as f:
+            f.write(f"\n{'='*50}\n")
+            f.write(f"BOT STARTUP - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"{'='*50}\n")
+    except Exception as e:
+        print(f"Could not create error log file: {e}")
+
+def log_error_to_file(error, context=""):
+    """Log error to file immediately"""
+    try:
+        with open('error_log.txt', 'a', encoding='utf-8') as f:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"\n[{timestamp}] ERROR: {context}\n")
+            f.write(f"Error: {str(error)}\n")
+            f.write(f"Traceback:\n{traceback.format_exc()}\n")
+            f.write(f"{'='*50}\n")
+    except Exception as e:
+        print(f"Could not write to error log: {e}")
+
+# Setup basic logging immediately
+setup_basic_logging()
+
+try:
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
+    from database.database import DatabaseManager
+    from commands.start import start_command
+    from commands.info import info_command
+    from commands.admin import admin_commands
+    from commands.logs import logs_command
+    from commands.commit_logs import commit_logs_command
+    from config.prefixes import is_valid_prefix, get_command_without_prefix
+    from utils.logger import ErrorLogger
+except Exception as e:
+    log_error_to_file(e, "Import error")
+    raise e
 
 # Load environment variables
 load_dotenv()
 
 # Initialize error logger
-error_logger = ErrorLogger(
-    bot_token=os.getenv('BOT_TOKEN'),
-    error_chat_id=os.getenv('ERROR_CHAT_ID')  # Optional: Chat ID to send errors to
-)
+try:
+    error_logger = ErrorLogger(
+        bot_token=os.getenv('BOT_TOKEN'),
+        error_chat_id=os.getenv('ERROR_CHAT_ID')  # Optional: Chat ID to send errors to
+    )
+except Exception as e:
+    log_error_to_file(e, "Error logger initialization")
+    error_logger = None
 
 class RiasGremoryBot:
     def __init__(self):
@@ -33,18 +70,23 @@ class RiasGremoryBot:
         """Start the bot"""
         # Check if bot token is provided
         if not self.bot_token:
-            error_logger.log_error("BOT_TOKEN environment variable is not set", "Bot initialization")
+            log_error_to_file("BOT_TOKEN environment variable is not set", "Bot initialization")
+            if error_logger:
+                error_logger.log_error("BOT_TOKEN environment variable is not set", "Bot initialization")
             return
         
-        error_logger.log_info(f"Bot token: {self.bot_token[:10]}...")
+        if error_logger:
+            error_logger.log_info(f"Bot token: {self.bot_token[:10]}...")
         
         try:
             # Initialize database
-            error_logger.log_info("Initializing database...")
+            if error_logger:
+                error_logger.log_info("Initializing database...")
             await self.db_manager.initialize_database()
             
             # Create application
-            error_logger.log_info("Creating application...")
+            if error_logger:
+                error_logger.log_info("Creating application...")
             application = Application.builder().token(self.bot_token).build()
         
         # Add command handlers (with and without prefixes)
@@ -65,14 +107,18 @@ class RiasGremoryBot:
         application.add_handler(CallbackQueryHandler(self.button_callback))
         
             # Start the bot
-            error_logger.log_info("Starting bot...")
+            if error_logger:
+                error_logger.log_info("Starting bot...")
             await application.initialize()
             await application.start()
-            error_logger.log_info("Bot started successfully!")
+            if error_logger:
+                error_logger.log_info("Bot started successfully!")
             await application.run_polling()
             
         except Exception as e:
-            error_logger.log_error(e, "Bot startup")
+            log_error_to_file(e, "Bot startup")
+            if error_logger:
+                error_logger.log_error(e, "Bot startup")
             raise e
     
     async def handle_prefixed_commands(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -127,8 +173,16 @@ class RiasGremoryBot:
 
 async def main():
     """Main function"""
-    bot = RiasGremoryBot()
-    await bot.start()
+    try:
+        bot = RiasGremoryBot()
+        await bot.start()
+    except Exception as e:
+        log_error_to_file(e, "Main function")
+        raise e
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        log_error_to_file(e, "asyncio.run")
+        sys.exit(1)
