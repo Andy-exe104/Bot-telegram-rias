@@ -27,47 +27,54 @@ class DatabaseManager:
     
     async def initialize_database(self):
         """Initialize database tables"""
-        pool = await self.get_connection()
-        
-        async with pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                # Create users table
-                await cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        telegram_id BIGINT UNIQUE NOT NULL,
-                        username VARCHAR(255),
-                        first_name VARCHAR(255),
-                        last_name VARCHAR(255),
-                        rank VARCHAR(50) DEFAULT 'free_user',
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        expires_at TIMESTAMP NULL,
-                        is_active BOOLEAN DEFAULT TRUE
-                    )
-                """)
-                
-                # Create premium_keys table
-                await cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS premium_keys (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        key_code VARCHAR(255) UNIQUE NOT NULL,
-                        rank VARCHAR(50) NOT NULL,
-                        days_valid INT NOT NULL,
-                        created_by BIGINT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        used_by BIGINT NULL,
-                        used_at TIMESTAMP NULL,
-                        is_used BOOLEAN DEFAULT FALSE
-                    )
-                """)
-                
-                # Insert default Issei user (Owner)
-                await cursor.execute("""
-                    INSERT IGNORE INTO users (telegram_id, username, first_name, last_name, rank, expires_at)
-                    VALUES (7560671542, 'kenny_kx', 'Issei', 'Owner', 'issei', NULL)
-                """)
-        
-        print("✅ Database initialized successfully!")
+        try:
+            pool = await self.get_connection()
+            
+            async with pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    print("🔧 Creating users table...")
+                    # Create users table
+                    await cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            telegram_id BIGINT UNIQUE NOT NULL,
+                            username VARCHAR(255),
+                            first_name VARCHAR(255),
+                            last_name VARCHAR(255),
+                            rank VARCHAR(50) DEFAULT 'free_user',
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMP NULL,
+                            is_active TINYINT(1) DEFAULT 1
+                        )
+                    """)
+                    
+                    print("🔧 Creating premium_keys table...")
+                    # Create premium_keys table
+                    await cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS premium_keys (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            key_code VARCHAR(255) UNIQUE NOT NULL,
+                            rank VARCHAR(50) NOT NULL,
+                            days_valid INT NOT NULL,
+                            created_by BIGINT NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            used_by BIGINT NULL,
+                            used_at TIMESTAMP NULL,
+                            is_used TINYINT(1) DEFAULT 0
+                        )
+                    """)
+                    
+                    print("🔧 Inserting default Issei user...")
+                    # Insert default Issei user (Owner)
+                    await cursor.execute("""
+                        INSERT IGNORE INTO users (telegram_id, username, first_name, last_name, rank, expires_at)
+                        VALUES (7560671542, 'kenny_kx', 'Issei', 'Owner', 'issei', NULL)
+                    """)
+            
+            print("✅ Database initialized successfully!")
+        except Exception as e:
+            print(f"❌ Error initializing database: {e}")
+            raise e
     
     async def get_user(self, telegram_id: int):
         """Get user by telegram ID"""
@@ -154,7 +161,7 @@ class DatabaseManager:
         async with pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute("""
-                    SELECT * FROM premium_keys WHERE is_used = FALSE
+                    SELECT * FROM premium_keys WHERE is_used = 0
                 """)
                 keys = await cursor.fetchall()
         
@@ -168,7 +175,7 @@ class DatabaseManager:
             async with conn.cursor() as cursor:
                 # Get key info
                 await cursor.execute("""
-                    SELECT * FROM premium_keys WHERE key_code = %s AND is_used = FALSE
+                    SELECT * FROM premium_keys WHERE key_code = %s AND is_used = 0
                 """, (key_code,))
                 key = await cursor.fetchone()
                 
@@ -178,7 +185,7 @@ class DatabaseManager:
                 # Mark key as used
                 await cursor.execute("""
                     UPDATE premium_keys 
-                    SET is_used = TRUE, used_by = %s, used_at = CURRENT_TIMESTAMP
+                    SET is_used = 1, used_by = %s, used_at = CURRENT_TIMESTAMP
                     WHERE key_code = %s
                 """, (used_by, key_code))
                 
