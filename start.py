@@ -65,6 +65,17 @@ def main():
     except Exception as e:
         log_error("CRITICAL ERROR: Failed to start bot", e)
         print(f"❌ Failed to start bot: {e}")
+        
+        # Also write to a simple error file
+        try:
+            with open('simple_error.txt', 'w', encoding='utf-8') as f:
+                f.write(f"Error at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Error: {str(e)}\n")
+                f.write(f"Type: {type(e).__name__}\n")
+                f.write(f"Traceback:\n{traceback.format_exc()}\n")
+        except Exception as write_error:
+            print(f"Could not write error file: {write_error}")
+        
         sys.exit(1)
 
 if __name__ == "__main__":
