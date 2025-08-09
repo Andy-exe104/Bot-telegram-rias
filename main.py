@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+import traceback
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
@@ -8,17 +10,18 @@ from database.database import DatabaseManager
 from commands.start import start_command
 from commands.info import info_command
 from commands.admin import admin_commands
+from commands.logs import logs_command
 from config.prefixes import is_valid_prefix, get_command_without_prefix
+from utils.logger import ErrorLogger
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(s)s',
-    level=logging.INFO
+# Initialize error logger
+error_logger = ErrorLogger(
+    bot_token=os.getenv('BOT_TOKEN'),
+    error_chat_id=os.getenv('ERROR_CHAT_ID')  # Optional: Chat ID to send errors to
 )
-logger = logging.getLogger(__name__)
 
 class RiasGremoryBot:
     def __init__(self):
@@ -29,23 +32,24 @@ class RiasGremoryBot:
         """Start the bot"""
         # Check if bot token is provided
         if not self.bot_token:
-            print("❌ Error: BOT_TOKEN environment variable is not set")
+            error_logger.log_error("BOT_TOKEN environment variable is not set", "Bot initialization")
             return
         
-        print(f"🔧 Bot token: {self.bot_token[:10]}...")
+        error_logger.log_info(f"Bot token: {self.bot_token[:10]}...")
         
         try:
             # Initialize database
-            print("🔧 Initializing database...")
+            error_logger.log_info("Initializing database...")
             await self.db_manager.initialize_database()
             
             # Create application
-            print("🔧 Creating application...")
+            error_logger.log_info("Creating application...")
             application = Application.builder().token(self.bot_token).build()
         
         # Add command handlers (with and without prefixes)
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("info", info_command))
+        application.add_handler(CommandHandler("logs", logs_command))
         
         # Add admin commands
         application.add_handler(CommandHandler("addadmin", admin_commands.add_admin))
@@ -59,14 +63,14 @@ class RiasGremoryBot:
         application.add_handler(CallbackQueryHandler(self.button_callback))
         
             # Start the bot
-            print("🔧 Starting bot...")
+            error_logger.log_info("Starting bot...")
             await application.initialize()
             await application.start()
-            print("✅ Bot started successfully!")
+            error_logger.log_info("Bot started successfully!")
             await application.run_polling()
             
         except Exception as e:
-            print(f"❌ Error starting bot: {e}")
+            error_logger.log_error(e, "Bot startup")
             raise e
     
     async def handle_prefixed_commands(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -93,6 +97,8 @@ class RiasGremoryBot:
             await start_command(update, context)
         elif cmd == "info":
             await info_command(update, context)
+        elif cmd == "logs":
+            await logs_command(update, context)
         elif cmd == "addadmin":
             await admin_commands.add_admin(update, context)
         elif cmd == "addseller":

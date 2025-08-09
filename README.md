@@ -33,6 +33,7 @@ DB_HOST=your_database_host
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASSWORD=your_database_password
+ERROR_CHAT_ID=your_chat_id_for_error_notifications
 ```
 
 ### 4. Ejecutar el bot
@@ -45,6 +46,7 @@ python main.py
 ### Comandos Generales
 - `/start` o `*start` - Iniciar el bot con imagen de Rias y botón de @Kenny_kx
 - `/info` o `*info` - Ver información del usuario, rango y tiempo restante
+- `/logs` o `*logs` - Ver errores recientes (solo Issei)
 
 ### Comandos de Administración (Solo Issei)
 - `/addadmin <user_id> [días]` o `*addadmin <user_id> [días]` - Agregar administrador
@@ -91,16 +93,7 @@ El bot crea automáticamente las siguientes tablas:
 - `expires_at`: Fecha de expiración
 - `is_active`: Estado activo
 
-### Tabla `keys`
-- `id`: ID único de la llave
-- `key_code`: Código de la llave
-- `rank`: Rango que otorga
-- `days_valid`: Días de validez
-- `created_by`: ID del creador
-- `created_at`: Fecha de creación
-- `used_by`: ID del usuario que la usó
-- `used_at`: Fecha de uso
-- `is_used`: Estado de uso
+
 
 ## 🚀 Despliegue en Railway
 
@@ -111,6 +104,7 @@ El bot crea automáticamente las siguientes tablas:
    - `DB_NAME`
    - `DB_USER`
    - `DB_PASSWORD`
+   - `ERROR_CHAT_ID` (opcional - para notificaciones de errores)
 3. **Desplegar** - Railway detectará automáticamente el Procfile
 
 ## 🎨 Características Especiales
@@ -120,6 +114,7 @@ El bot crea automáticamente las siguientes tablas:
 - **Botón @Kenny_kx**: Enlace directo al creador
 - **Emojis Temáticos**: Diseño visual inspirado en Rias Gremory
 - **Gestión de Expiración**: Control automático de fechas de vencimiento
+- **Sistema de Logging**: Registro de errores en archivo y notificaciones Telegram
 
 ## 🔧 Estructura del Proyecto
 
@@ -133,13 +128,16 @@ rias-gremory-bot/
 ├── database/
 │   ├── __init__.py
 │   └── database.py     # Gestión de base de datos
+├── logs/               # Directorio de logs (se crea automáticamente)
 ├── commands/
 │   ├── __init__.py
 │   ├── start.py        # Comando /start
 │   ├── info.py         # Comando /info
 │   ├── admin.py        # Comandos de administración
-│   ├── premium.py      # Comandos de llaves premium
-│   └── key.py          # Gestión de llaves
+│   └── logs.py         # Comando para ver logs
+├── utils/
+│   ├── __init__.py
+│   └── logger.py       # Sistema de logging
 └── config/
     ├── __init__.py
     └── prefixes.py     # Configuración de prefijos
