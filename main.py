@@ -88,24 +88,24 @@ class RiasGremoryBot:
             if error_logger:
                 error_logger.log_info("Creating application...")
             application = Application.builder().token(self.bot_token).build()
-        
-        # Add command handlers (with and without prefixes)
-        application.add_handler(CommandHandler("start", start_command))
-        application.add_handler(CommandHandler("info", info_command))
-        application.add_handler(CommandHandler("logs", logs_command))
-        application.add_handler(CommandHandler("commitlogs", commit_logs_command))
-        
-        # Add admin commands
-        application.add_handler(CommandHandler("addadmin", admin_commands.add_admin))
-        application.add_handler(CommandHandler("addseller", admin_commands.add_seller))
-        application.add_handler(CommandHandler("addpremium", admin_commands.add_premium))
-        
-        # Add message handler for prefixed commands
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_prefixed_commands))
-        
-        # Add callback query handler for buttons
-        application.add_handler(CallbackQueryHandler(self.button_callback))
-        
+            
+            # Add command handlers (with and without prefixes)
+            application.add_handler(CommandHandler("start", start_command))
+            application.add_handler(CommandHandler("info", info_command))
+            application.add_handler(CommandHandler("logs", logs_command))
+            application.add_handler(CommandHandler("commitlogs", commit_logs_command))
+            
+            # Add admin commands
+            application.add_handler(CommandHandler("addadmin", admin_commands.add_admin))
+            application.add_handler(CommandHandler("addseller", admin_commands.add_seller))
+            application.add_handler(CommandHandler("addpremium", admin_commands.add_premium))
+            
+            # Add message handler for prefixed commands
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_prefixed_commands))
+            
+            # Add callback query handler for buttons
+            application.add_handler(CallbackQueryHandler(self.button_callback))
+            
             # Start the bot
             if error_logger:
                 error_logger.log_info("Starting bot...")
