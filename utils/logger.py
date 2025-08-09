@@ -39,6 +39,11 @@ class ErrorLogger:
         # Add handlers to the logger
         self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
+        
+        # Also log to a file that can be committed to git
+        git_log_handler = logging.FileHandler('error_log.txt', encoding='utf-8')
+        git_log_handler.setFormatter(log_format)
+        self.logger.addHandler(git_log_handler)
     
     def log_error(self, error, context=""):
         """Log error to file and send to Telegram"""

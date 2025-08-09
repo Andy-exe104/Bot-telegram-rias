@@ -11,6 +11,7 @@ from commands.start import start_command
 from commands.info import info_command
 from commands.admin import admin_commands
 from commands.logs import logs_command
+from commands.commit_logs import commit_logs_command
 from config.prefixes import is_valid_prefix, get_command_without_prefix
 from utils.logger import ErrorLogger
 
@@ -50,6 +51,7 @@ class RiasGremoryBot:
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("info", info_command))
         application.add_handler(CommandHandler("logs", logs_command))
+        application.add_handler(CommandHandler("commitlogs", commit_logs_command))
         
         # Add admin commands
         application.add_handler(CommandHandler("addadmin", admin_commands.add_admin))
@@ -99,6 +101,8 @@ class RiasGremoryBot:
             await info_command(update, context)
         elif cmd == "logs":
             await logs_command(update, context)
+        elif cmd == "commitlogs":
+            await commit_logs_command(update, context)
         elif cmd == "addadmin":
             await admin_commands.add_admin(update, context)
         elif cmd == "addseller":

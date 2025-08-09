@@ -47,6 +47,7 @@ python main.py
 - `/start` o `*start` - Iniciar el bot con imagen de Rias y botón de @Kenny_kx
 - `/info` o `*info` - Ver información del usuario, rango y tiempo restante
 - `/logs` o `*logs` - Ver errores recientes (solo Issei)
+- `/commitlogs` o `*commitlogs` - Enviar logs al repositorio para debugging (solo Issei)
 
 ### Comandos de Administración (Solo Issei)
 - `/addadmin <user_id> [días]` o `*addadmin <user_id> [días]` - Agregar administrador
@@ -114,7 +115,7 @@ El bot crea automáticamente las siguientes tablas:
 - **Botón @Kenny_kx**: Enlace directo al creador
 - **Emojis Temáticos**: Diseño visual inspirado en Rias Gremory
 - **Gestión de Expiración**: Control automático de fechas de vencimiento
-- **Sistema de Logging**: Registro de errores en archivo y notificaciones Telegram
+- **Sistema de Logging**: Registro de errores en archivo y envío automático al repositorio para debugging
 
 ## 🔧 Estructura del Proyecto
 
@@ -134,7 +135,8 @@ rias-gremory-bot/
 │   ├── start.py        # Comando /start
 │   ├── info.py         # Comando /info
 │   ├── admin.py        # Comandos de administración
-│   └── logs.py         # Comando para ver logs
+│   ├── logs.py         # Comando para ver logs
+│   └── commit_logs.py  # Comando para enviar logs al repo
 ├── utils/
 │   ├── __init__.py
 │   └── logger.py       # Sistema de logging
@@ -148,6 +150,30 @@ rias-gremory-bot/
 - **Creador**: @Kenny_kx
 - **Inspiración**: Rias Gremory (High School DxD)
 - **Desarrollo**: Python + python-telegram-bot
+
+## 🐛 Sistema de Debugging
+
+### 📋 **Cómo reportar errores:**
+
+1. **Cuando ocurra un error** en Railway, usa el comando:
+   ```
+   /commitlogs
+   ```
+
+2. **El bot automáticamente:**
+   - Guarda todos los errores en `error_log.txt`
+   - Hace commit y push al repositorio
+   - Te confirma que se envió
+
+3. **Yo podré ver** todos los errores en el archivo `error_log.txt` del repositorio
+
+### 📁 **Archivos de log:**
+- `error_log.txt` - Errores que se envían al repositorio (para debugging)
+- `logs/bot_errors.log` - Logs locales (no se envían)
+
+### 🎯 **Comandos de debugging:**
+- `/logs` - Ver errores recientes en Telegram
+- `/commitlogs` - Enviar logs al repositorio para debugging
 
 ## 📝 Licencia
 
