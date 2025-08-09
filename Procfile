@@ -1,1 +1,1 @@
-worker: python start.py
+worker: python capture_errors.py

@@ -17,9 +17,22 @@ def log_error(message, error=None):
             f.write(f"[{timestamp}] {message}\n")
             if error:
                 f.write(f"Error: {str(error)}\n")
+                f.write(f"Type: {type(error).__name__}\n")
                 f.write(f"Traceback:\n{traceback.format_exc()}\n")
             f.write("=" * 50 + "\n")
             f.flush()
+        
+        # Also write to a file that will be committed to git
+        with open('github_errors.txt', 'a', encoding='utf-8') as f:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] {message}\n")
+            if error:
+                f.write(f"Error: {str(error)}\n")
+                f.write(f"Type: {type(error).__name__}\n")
+                f.write(f"Traceback:\n{traceback.format_exc()}\n")
+            f.write("=" * 50 + "\n")
+            f.flush()
+            
     except Exception as e:
         print(f"Could not write error log: {e}")
 

@@ -29,10 +29,13 @@ ENV/
 # Environment variables
 .env
 
-# Logs (but keep error_log.txt for debugging)
+# Logs (but keep error files for debugging)
 logs/
 *.log
 !error_log.txt
+!github_errors.txt
+!railway_errors.txt
+!simple_error.txt
 
 # IDE
 .vscode/
