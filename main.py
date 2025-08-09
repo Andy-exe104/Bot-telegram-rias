@@ -27,11 +27,21 @@ class RiasGremoryBot:
         
     async def start(self):
         """Start the bot"""
-        # Initialize database
-        await self.db_manager.initialize_database()
+        # Check if bot token is provided
+        if not self.bot_token:
+            print("❌ Error: BOT_TOKEN environment variable is not set")
+            return
         
-        # Create application
-        application = Application.builder().token(self.bot_token).build()
+        print(f"🔧 Bot token: {self.bot_token[:10]}...")
+        
+        try:
+            # Initialize database
+            print("🔧 Initializing database...")
+            await self.db_manager.initialize_database()
+            
+            # Create application
+            print("🔧 Creating application...")
+            application = Application.builder().token(self.bot_token).build()
         
         # Add command handlers (with and without prefixes)
         application.add_handler(CommandHandler("start", start_command))
@@ -48,10 +58,16 @@ class RiasGremoryBot:
         # Add callback query handler for buttons
         application.add_handler(CallbackQueryHandler(self.button_callback))
         
-        # Start the bot
-        await application.initialize()
-        await application.start()
-        await application.run_polling()
+            # Start the bot
+            print("🔧 Starting bot...")
+            await application.initialize()
+            await application.start()
+            print("✅ Bot started successfully!")
+            await application.run_polling()
+            
+        except Exception as e:
+            print(f"❌ Error starting bot: {e}")
+            raise e
     
     async def handle_prefixed_commands(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle commands with prefixes"""

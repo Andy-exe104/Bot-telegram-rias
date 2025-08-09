@@ -12,17 +12,32 @@ class DatabaseManager:
         self.db_password = os.getenv('DB_PASSWORD')
         self.pool = None
         
+        # Check if all database environment variables are set
+        if not all([self.db_host, self.db_name, self.db_user, self.db_password]):
+            print("❌ Error: Database environment variables are not set properly")
+            print(f"DB_HOST: {'✅' if self.db_host else '❌'}")
+            print(f"DB_NAME: {'✅' if self.db_name else '❌'}")
+            print(f"DB_USER: {'✅' if self.db_user else '❌'}")
+            print(f"DB_PASSWORD: {'✅' if self.db_password else '❌'}")
+            raise ValueError("Missing database environment variables")
+        
     async def get_connection(self):
         """Get database connection"""
         if not self.pool:
-            self.pool = await aiomysql.create_pool(
-                host=self.db_host,
-                db=self.db_name,
-                user=self.db_user,
-                password=self.db_password,
-                charset='utf8mb4',
-                autocommit=True
-            )
+            try:
+                print(f"🔧 Connecting to database: {self.db_host}/{self.db_name}")
+                self.pool = await aiomysql.create_pool(
+                    host=self.db_host,
+                    db=self.db_name,
+                    user=self.db_user,
+                    password=self.db_password,
+                    charset='utf8mb4',
+                    autocommit=True
+                )
+                print("✅ Database connection pool created successfully!")
+            except Exception as e:
+                print(f"❌ Error creating database connection: {e}")
+                raise e
         return self.pool
     
     async def initialize_database(self):
