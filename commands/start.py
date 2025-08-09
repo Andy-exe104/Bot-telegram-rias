@@ -59,9 +59,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • *Rango:* {rank_info['emoji']} {rank_info['name']}
 • *Descripción:* {rank_info['description']}
 
-🔥 *Comandos disponibles:*
-• /info - Ver tu información detallada
-• /redeemkey - Canjear llave premium
+    🔥 *Comandos disponibles:*
+    • /info - Ver tu información detallada
 
 💫 *¡Disfruta de tu experiencia con Rias Gremory!* 💫
     """

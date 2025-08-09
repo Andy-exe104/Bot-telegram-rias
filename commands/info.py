@@ -84,36 +84,26 @@ def get_available_commands(rank: str) -> str:
 • /info - Ver información
 • /addadmin - Agregar admin
 • /addseller - Agregar seller
-• /addpremium - Agregar premium
-• /generatekey - Generar llaves
-• /keys - Ver llaves
-• /redeemkey - Canjear llave""",
+• /addpremium - Agregar premium""",
         
         'admin': """
 • /start - Iniciar bot
 • /info - Ver información
 • /addseller - Agregar seller
-• /addpremium - Agregar premium
-• /generatekey - Generar llaves
-• /keys - Ver llaves
-• /redeemkey - Canjear llave""",
+• /addpremium - Agregar premium""",
         
         'seller': """
 • /start - Iniciar bot
 • /info - Ver información
-• /addpremium - Agregar premium
-• /generatekey - Generar llaves
-• /redeemkey - Canjear llave""",
+• /addpremium - Agregar premium""",
         
         'premium': """
 • /start - Iniciar bot
-• /info - Ver información
-• /redeemkey - Canjear llave""",
+• /info - Ver información""",
         
         'free_user': """
 • /start - Iniciar bot
-• /info - Ver información
-• /redeemkey - Canjear llave"""
+• /info - Ver información"""
     }
     
     return commands.get(rank, commands['free_user'])

@@ -8,8 +8,6 @@ from database.database import DatabaseManager
 from commands.start import start_command
 from commands.info import info_command
 from commands.admin import admin_commands
-from commands.premium import premium_commands
-from commands.key import key_commands
 from config.prefixes import is_valid_prefix, get_command_without_prefix
 
 # Load environment variables
@@ -43,13 +41,6 @@ class RiasGremoryBot:
         application.add_handler(CommandHandler("addadmin", admin_commands.add_admin))
         application.add_handler(CommandHandler("addseller", admin_commands.add_seller))
         application.add_handler(CommandHandler("addpremium", admin_commands.add_premium))
-        
-        # Add premium commands
-        application.add_handler(CommandHandler("generatekey", premium_commands.generate_key))
-        application.add_handler(CommandHandler("redeemkey", premium_commands.redeem_key))
-        
-        # Add key commands
-        application.add_handler(CommandHandler("keys", key_commands.list_keys))
         
         # Add message handler for prefixed commands
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_prefixed_commands))
@@ -92,12 +83,6 @@ class RiasGremoryBot:
             await admin_commands.add_seller(update, context)
         elif cmd == "addpremium":
             await admin_commands.add_premium(update, context)
-        elif cmd == "generatekey":
-            await premium_commands.generate_key(update, context)
-        elif cmd == "redeemkey":
-            await premium_commands.redeem_key(update, context)
-        elif cmd == "keys":
-            await key_commands.list_keys(update, context)
     
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle button callbacks"""
@@ -110,9 +95,7 @@ class RiasGremoryBot:
                                         "🔥 *Comandos disponibles:*\n"
                                         "• /start o *start - Iniciar el bot\n"
                                         "• /info o *info - Ver tu información\n"
-                                        "• /generatekey o *generatekey - Generar llave premium (solo admin)\n"
-                                        "• /redeemkey o *redeemkey - Canjear llave premium\n"
-                                        "• /keys o *keys - Ver llaves disponibles (solo admin)\n\n"
+                                        "• /addpremium o *addpremium - Dar premium a usuario\n\n"
                                         "🎪 *¡Disfruta de tu experiencia con Rias!* 🎪", 
                                         parse_mode='Markdown')
 
