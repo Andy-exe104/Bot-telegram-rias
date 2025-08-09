@@ -46,9 +46,9 @@ class DatabaseManager:
                     )
                 """)
                 
-                # Create keys table
+                # Create premium_keys table
                 await cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS keys (
+                    CREATE TABLE IF NOT EXISTS premium_keys (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         key_code VARCHAR(255) UNIQUE NOT NULL,
                         rank VARCHAR(50) NOT NULL,
@@ -135,13 +135,13 @@ class DatabaseManager:
         async with pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute("""
-                    INSERT INTO keys (key_code, rank, days_valid, created_by)
+                    INSERT INTO premium_keys (key_code, rank, days_valid, created_by)
                     VALUES (%s, %s, %s, %s)
                 """, (key_code, rank, days, created_by))
                 
                 # Get the created key
                 await cursor.execute("""
-                    SELECT * FROM keys WHERE key_code = %s
+                    SELECT * FROM premium_keys WHERE key_code = %s
                 """, (key_code,))
                 key = await cursor.fetchone()
         
@@ -154,7 +154,7 @@ class DatabaseManager:
         async with pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute("""
-                    SELECT * FROM keys WHERE is_used = FALSE
+                    SELECT * FROM premium_keys WHERE is_used = FALSE
                 """)
                 keys = await cursor.fetchall()
         
@@ -168,7 +168,7 @@ class DatabaseManager:
             async with conn.cursor() as cursor:
                 # Get key info
                 await cursor.execute("""
-                    SELECT * FROM keys WHERE key_code = %s AND is_used = FALSE
+                    SELECT * FROM premium_keys WHERE key_code = %s AND is_used = FALSE
                 """, (key_code,))
                 key = await cursor.fetchone()
                 
@@ -177,7 +177,7 @@ class DatabaseManager:
                 
                 # Mark key as used
                 await cursor.execute("""
-                    UPDATE keys 
+                    UPDATE premium_keys 
                     SET is_used = TRUE, used_by = %s, used_at = CURRENT_TIMESTAMP
                     WHERE key_code = %s
                 """, (used_by, key_code))
