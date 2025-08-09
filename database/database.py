@@ -1,6 +1,6 @@
 import os
 import asyncio
-import asyncpg
+import aiomysql
 from datetime import datetime, timedelta
 import uuid
 
@@ -15,11 +15,13 @@ class DatabaseManager:
     async def get_connection(self):
         """Get database connection"""
         if not self.pool:
-            self.pool = await asyncpg.create_pool(
+            self.pool = await aiomysql.create_pool(
                 host=self.db_host,
-                database=self.db_name,
+                db=self.db_name,
                 user=self.db_user,
-                password=self.db_password
+                password=self.db_password,
+                charset='utf8mb4',
+                autocommit=True
             )
         return self.pool
     
@@ -28,42 +30,42 @@ class DatabaseManager:
         pool = await self.get_connection()
         
         async with pool.acquire() as conn:
-            # Create users table
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    telegram_id BIGINT UNIQUE NOT NULL,
-                    username VARCHAR(255),
-                    first_name VARCHAR(255),
-                    last_name VARCHAR(255),
-                    rank VARCHAR(50) DEFAULT 'free_user',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at TIMESTAMP NULL,
-                    is_active BOOLEAN DEFAULT TRUE
-                )
-            """)
-            
-            # Create keys table
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS keys (
-                    id SERIAL PRIMARY KEY,
-                    key_code VARCHAR(255) UNIQUE NOT NULL,
-                    rank VARCHAR(50) NOT NULL,
-                    days_valid INTEGER NOT NULL,
-                    created_by BIGINT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    used_by BIGINT NULL,
-                    used_at TIMESTAMP NULL,
-                    is_used BOOLEAN DEFAULT FALSE
-                )
-            """)
-            
-            # Insert default Issei user (Owner)
-            await conn.execute("""
-                INSERT INTO users (telegram_id, username, first_name, last_name, rank, expires_at)
-                VALUES (7560671542, 'kenny_kx', 'Issei', 'Owner', 'issei', NULL)
-                ON CONFLICT (telegram_id) DO NOTHING
-            """)
+            async with conn.cursor() as cursor:
+                # Create users table
+                await cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        telegram_id BIGINT UNIQUE NOT NULL,
+                        username VARCHAR(255),
+                        first_name VARCHAR(255),
+                        last_name VARCHAR(255),
+                        rank VARCHAR(50) DEFAULT 'free_user',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP NULL,
+                        is_active BOOLEAN DEFAULT TRUE
+                    )
+                """)
+                
+                # Create keys table
+                await cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS keys (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        key_code VARCHAR(255) UNIQUE NOT NULL,
+                        rank VARCHAR(50) NOT NULL,
+                        days_valid INT NOT NULL,
+                        created_by BIGINT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        used_by BIGINT NULL,
+                        used_at TIMESTAMP NULL,
+                        is_used BOOLEAN DEFAULT FALSE
+                    )
+                """)
+                
+                # Insert default Issei user (Owner)
+                await cursor.execute("""
+                    INSERT IGNORE INTO users (telegram_id, username, first_name, last_name, rank, expires_at)
+                    VALUES (7560671542, 'kenny_kx', 'Issei', 'Owner', 'issei', NULL)
+                """)
         
         print("✅ Database initialized successfully!")
     
@@ -72,9 +74,11 @@ class DatabaseManager:
         pool = await self.get_connection()
         
         async with pool.acquire() as conn:
-            user = await conn.fetchrow("""
-                SELECT * FROM users WHERE telegram_id = $1
-            """, telegram_id)
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    SELECT * FROM users WHERE telegram_id = %s
+                """, (telegram_id,))
+                user = await cursor.fetchone()
         
         return user
     
@@ -83,12 +87,17 @@ class DatabaseManager:
         pool = await self.get_connection()
         
         async with pool.acquire() as conn:
-            user = await conn.fetchrow("""
-                INSERT INTO users (telegram_id, username, first_name, last_name, rank)
-                VALUES ($1, $2, $3, $4, 'free_user')
-                ON CONFLICT (telegram_id) DO NOTHING
-                RETURNING *
-            """, telegram_id, username, first_name, last_name)
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    INSERT IGNORE INTO users (telegram_id, username, first_name, last_name, rank)
+                    VALUES (%s, %s, %s, %s, 'free_user')
+                """, (telegram_id, username, first_name, last_name))
+                
+                # Get the created user
+                await cursor.execute("""
+                    SELECT * FROM users WHERE telegram_id = %s
+                """, (telegram_id,))
+                user = await cursor.fetchone()
         
         return user
     
@@ -102,12 +111,18 @@ class DatabaseManager:
             expires_at = None
             
         async with pool.acquire() as conn:
-            user = await conn.fetchrow("""
-                UPDATE users 
-                SET rank = $1, expires_at = $2
-                WHERE telegram_id = $3
-                RETURNING *
-            """, new_rank, expires_at, telegram_id)
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    UPDATE users 
+                    SET rank = %s, expires_at = %s
+                    WHERE telegram_id = %s
+                """, (new_rank, expires_at, telegram_id))
+                
+                # Get the updated user
+                await cursor.execute("""
+                    SELECT * FROM users WHERE telegram_id = %s
+                """, (telegram_id,))
+                user = await cursor.fetchone()
         
         return user
     
@@ -118,11 +133,17 @@ class DatabaseManager:
         key_code = str(uuid.uuid4())[:12].upper()
         
         async with pool.acquire() as conn:
-            key = await conn.fetchrow("""
-                INSERT INTO keys (key_code, rank, days_valid, created_by)
-                VALUES ($1, $2, $3, $4)
-                RETURNING *
-            """, key_code, rank, days, created_by)
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    INSERT INTO keys (key_code, rank, days_valid, created_by)
+                    VALUES (%s, %s, %s, %s)
+                """, (key_code, rank, days, created_by))
+                
+                # Get the created key
+                await cursor.execute("""
+                    SELECT * FROM keys WHERE key_code = %s
+                """, (key_code,))
+                key = await cursor.fetchone()
         
         return key
     
@@ -131,9 +152,11 @@ class DatabaseManager:
         pool = await self.get_connection()
         
         async with pool.acquire() as conn:
-            keys = await conn.fetch("""
-                SELECT * FROM keys WHERE is_used = FALSE
-            """)
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    SELECT * FROM keys WHERE is_used = FALSE
+                """)
+                keys = await cursor.fetchall()
         
         return keys
     
@@ -142,23 +165,25 @@ class DatabaseManager:
         pool = await self.get_connection()
         
         async with pool.acquire() as conn:
-            # Get key info
-            key = await conn.fetchrow("""
-                SELECT * FROM keys WHERE key_code = $1 AND is_used = FALSE
-            """, key_code)
-            
-            if not key:
-                return None
-            
-            # Mark key as used
-            await conn.execute("""
-                UPDATE keys 
-                SET is_used = TRUE, used_by = $1, used_at = CURRENT_TIMESTAMP
-                WHERE key_code = $2
-            """, used_by, key_code)
-            
-            # Update user rank
-            await self.update_user_rank(used_by, key['rank'], key['days_valid'])
+            async with conn.cursor() as cursor:
+                # Get key info
+                await cursor.execute("""
+                    SELECT * FROM keys WHERE key_code = %s AND is_used = FALSE
+                """, (key_code,))
+                key = await cursor.fetchone()
+                
+                if not key:
+                    return None
+                
+                # Mark key as used
+                await cursor.execute("""
+                    UPDATE keys 
+                    SET is_used = TRUE, used_by = %s, used_at = CURRENT_TIMESTAMP
+                    WHERE key_code = %s
+                """, (used_by, key_code))
+                
+                # Update user rank
+                await self.update_user_rank(used_by, key[3], key[4])  # rank and days_valid
         
         return key
     
