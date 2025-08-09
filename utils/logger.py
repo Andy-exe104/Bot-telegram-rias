@@ -12,14 +12,20 @@ class ErrorLogger:
         self.bot = None
         
         # Create logs directory if it doesn't exist
-        os.makedirs('logs', exist_ok=True)
+        try:
+            os.makedirs('logs', exist_ok=True)
+        except Exception as e:
+            print(f"Warning: Could not create logs directory: {e}")
         
         # Setup file logging
         self.setup_file_logging()
         
         # Setup bot for Telegram notifications
         if bot_token:
-            self.bot = Bot(token=bot_token)
+            try:
+                self.bot = Bot(token=bot_token)
+            except Exception as e:
+                print(f"Warning: Could not create bot instance: {e}")
     
     def setup_file_logging(self):
         """Setup file logging"""
@@ -27,23 +33,34 @@ class ErrorLogger:
         self.logger = logging.getLogger('RiasBot')
         self.logger.setLevel(logging.INFO)
         
-        # Create handlers
-        file_handler = logging.FileHandler('logs/bot_errors.log', encoding='utf-8')
+        # Clear any existing handlers
+        self.logger.handlers.clear()
+        
+        # Create console handler (always works)
         console_handler = logging.StreamHandler()
-        
-        # Create formatters and add it to handlers
         log_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(log_format)
         console_handler.setFormatter(log_format)
-        
-        # Add handlers to the logger
-        self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
         
-        # Also log to a file that can be committed to git
-        git_log_handler = logging.FileHandler('error_log.txt', encoding='utf-8')
-        git_log_handler.setFormatter(log_format)
-        self.logger.addHandler(git_log_handler)
+        # Try to create file handlers
+        try:
+            # Create logs directory if it doesn't exist
+            os.makedirs('logs', exist_ok=True)
+            
+            # Create file handler for logs directory
+            file_handler = logging.FileHandler('logs/bot_errors.log', encoding='utf-8')
+            file_handler.setFormatter(log_format)
+            self.logger.addHandler(file_handler)
+        except Exception as e:
+            print(f"Warning: Could not create logs file handler: {e}")
+        
+        try:
+            # Create git log handler
+            git_log_handler = logging.FileHandler('error_log.txt', encoding='utf-8')
+            git_log_handler.setFormatter(log_format)
+            self.logger.addHandler(git_log_handler)
+        except Exception as e:
+            print(f"Warning: Could not create error_log.txt handler: {e}")
     
     def log_error(self, error, context=""):
         """Log error to file and send to Telegram"""
